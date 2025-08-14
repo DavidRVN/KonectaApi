@@ -1,0 +1,124 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Colaboradores</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="p-4">
+    <h2>Registrar / Actualizar Colaborador</h2>
+    <form id="formColaborador">
+        <input type="text" class="form-control mb-2" placeholder="Número Identificación" id="NumeroIdentificacion" required>
+        <input type="text" class="form-control mb-2" placeholder="Nombres" id="Nombres" required>
+        <input type="text" class="form-control mb-2" placeholder="Apellidos" id="Apellidos" required>
+        <input type="text" class="form-control mb-2" placeholder="Dirección" id="Direccion" required>
+        <input type="email" class="form-control mb-2" placeholder="Email" id="Email" required>
+        <input type="text" class="form-control mb-2" placeholder="Teléfono" id="Telefono" required>
+        <input type="number" class="form-control mb-2" placeholder="Salario" id="Salario" required>
+        <input type="number" class="form-control mb-2" placeholder="ID Área" id="IdArea" required>
+        <input type="date" class="form-control mb-2" id="FechaIngreso" required>
+        <select id="Sexo" class="form-control mb-2" required>
+            <option value="">Seleccione sexo</option>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
+        </select>
+        <button type="submit" class="btn btn-primary" id="btnGuardar">Registrar</button>
+    </form>
+
+    <hr>
+
+    <h2>Buscar Colaborador</h2>
+    <input type="text" id="buscarId" class="form-control mb-2" placeholder="Número de identificación">
+    <button class="btn btn-success mb-3" onclick="buscarColaborador()">Buscar</button>
+
+    <div id="resultado" class="mt-4"></div>
+
+    <script>
+        const API_URL = "https://localhost:44371/api"; // Ajusta el puerto aquí
+        let modoEdicion = false;
+
+        document.getElementById("formColaborador").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            let colaborador = {
+                NumeroIdentificacion: document.getElementById("NumeroIdentificacion").value,
+                Nombres: document.getElementById("Nombres").value,
+                Apellidos: document.getElementById("Apellidos").value,
+                Direccion: document.getElementById("Direccion").value,
+                Email: document.getElementById("Email").value,
+                Telefono: document.getElementById("Telefono").value,
+                Salario: parseFloat(document.getElementById("Salario").value),
+                IdArea: parseInt(document.getElementById("IdArea").value),
+                FechaIngreso: document.getElementById("FechaIngreso").value,
+                Sexo: document.getElementById("Sexo").value
+            };
+
+            let resp;
+            if (modoEdicion) {
+                resp = await fetch(`${API_URL}/ActualizarColaborador/${colaborador.NumeroIdentificacion}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(colaborador)
+                });
+                modoEdicion = false;
+                document.getElementById("btnGuardar").textContent = "Registrar";
+            } else {
+                resp = await fetch(`${API_URL}/RegistrarColaborador`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(colaborador)
+                });
+            }
+
+            let text = await resp.text();
+            alert(text);
+            document.getElementById("formColaborador").reset();
+        });
+
+        async function buscarColaborador() {
+            let id = document.getElementById("buscarId").value;
+            let resp = await fetch(`${API_URL}/ConsultarColaboradorPorIdentificacion/${id}`);
+            if (resp.ok) {
+                let data = await resp.json();
+                document.getElementById("resultado").innerHTML = `
+                        <p><strong>Nombres:</strong> ${data.Nombres}</p>
+                        <p><strong>Apellidos:</strong> ${data.Apellidos}</p>
+                        <p><strong>Salario:</strong> ${data.Salario}</p>
+                        <p><strong>Área:</strong> ${data.NombreArea}</p>
+                        <button class="btn btn-warning me-2" onclick="editarColaborador('${id}')">Editar</button>
+                        <button class="btn btn-danger" onclick="eliminarColaborador('${id}')">Eliminar</button>
+                    `;
+            } else {
+                document.getElementById("resultado").innerHTML = `<p class="text-danger">No encontrado</p>`;
+            }
+        }
+
+        async function eliminarColaborador(id) {
+            if (confirm("¿Seguro que deseas eliminar este colaborador?")) {
+                let resp = await fetch(`${API_URL}/EliminarColaborador/${id}`, { method: "DELETE" });
+                let text = await resp.text();
+                alert(text);
+                document.getElementById("resultado").innerHTML = "";
+            }
+        }
+
+        async function editarColaborador(id) {
+            let resp = await fetch(`${API_URL}/ConsultarColaboradorPorIdentificacion/${id}`);
+            if (resp.ok) {
+                let data = await resp.json();
+                document.getElementById("NumeroIdentificacion").value = data.NumeroIdentificacion;
+                document.getElementById("Nombres").value = data.Nombres;
+                document.getElementById("Apellidos").value = data.Apellidos;
+                document.getElementById("Direccion").value = data.Direccion;
+                document.getElementById("Email").value = data.Email;
+                document.getElementById("Telefono").value = data.Telefono;
+                document.getElementById("Salario").value = data.Salario;
+                document.getElementById("IdArea").value = data.IdArea;
+                document.getElementById("FechaIngreso").value = data.FechaIngreso;
+                document.getElementById("Sexo").value = data.Sexo;
+                modoEdicion = true;
+                document.getElementById("btnGuardar").textContent = "Actualizar";
+            }
+        }
+    </script>
+</body>
+</html>
